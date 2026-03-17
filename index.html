@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VKMusicX Premium</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: white;
+            overflow-x: hidden;
+        }
+        .container { max-width: 400px; margin: 0 auto; padding: 20px; }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            animation: slideDown 0.8s ease-out;
+        }
+        .header h1 {
+            font-size: 28px;
+            background: linear-gradient(45deg, #ffd700, #ffed4e);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        .stat-card {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 20px;
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.2);
+            transition: all 0.3s ease;
+        }
+        .stat-card:hover { transform: translateY(-5px); box-shadow: 0 20px 40px rgba(0,0,0,0.3); }
+        .stat-value { font-size: 24px; font-weight: bold; margin-bottom: 5px; }
+        .stat-label { font-size: 12px; opacity: 0.8; }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 25px;
+            font-weight: bold;
+            font-size: 14px;
+            margin: 10px 0;
+        }
+        .status-free { background: rgba(255,0,0,0.2); color: #ff6b6b; }
+        .status-premium { background: rgba(0,255,0,0.2); color: #51cf66; }
+        .status-vip { background: linear-gradient(45deg, #ffd700, #ffed4e); color: #333; }
+        
+        .action-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin: 30px 0;
+        }
+        .btn {
+            height: 60px;
+            border: none;
+            border-radius: 15px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            position: relative;
+            overflow: hidden;
+        }
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%;
+            width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: left 0.5s;
+        }
+        .btn:hover::before { left: 100%; }
+        
+        .btn-primary { background: linear-gradient(45deg, #0088cc, #005f99); box-shadow: 0 10px 30px rgba(0,136,204,0.4); }
+        .btn-success { background: linear-gradient(45deg, #00c851, #007e33); box-shadow: 0 10px 30px rgba(0,200,81,0.4); }
+        .btn-warning { background: linear-gradient(45deg, #ffbb33, #ff8800); box-shadow: 0 10px 30px rgba(255,187,51,0.4); }
+        .btn-danger { background: linear-gradient(45deg, #ff4444, #cc0000); box-shadow: 0 10px 30px rgba(255,68,68,0.4); }
+        .btn-vip { 
+            background: linear-gradient(45deg, #ffd700, #ffed4e, #ffb347);
+            color: #333; 
+            box-shadow: 0 15px 40px rgba(255,215,0,0.6);
+            font-size: 18px;
+            animation: glow 2s ease-in-out infinite alternate;
+        }
+        
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; }
+        .btn:active { transform: scale(0.98); }
+        
+        .playlist {
+            background: rgba(255,255,255,0.1);
+            border-radius: 20px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .playlist h3 { margin-bottom: 15px; text-align: center; }
+        .track { 
+            display: flex; 
+            align-items: center; 
+            gap: 15px; 
+            padding: 15px; 
+            background: rgba(255,255,255,0.05); 
+            border-radius: 15px; 
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .track:hover { background: rgba(255,255,255,0.15); transform: translateX(10px); }
+        .track-icon { font-size: 24px; }
+        .track-info h4 { font-size: 16px; margin-bottom: 5px; }
+        .track-info p { font-size: 12px; opacity: 0.8; }
+        
+        .progress-bar {
+            width: 100%; height: 8px; background: rgba(255,255,255,0.2);
+            border-radius: 4px; overflow: hidden; margin: 20px 0;
+        }
+        .progress-fill {
+            height: 100%; background: linear-gradient(90deg, #00c851, #51cf66);
+            border-radius: 4px; width: 0%; transition: width 0.5s ease;
+        }
+        
+        .notification {
+            position: fixed; top: 20px; right: 20px;
+            background: rgba(0,0,0,0.8); color: white;
+            padding: 15px 20px; border-radius: 10px;
+            transform: translateX(400px); transition: all 0.4s ease;
+        }
+        .notification.show { transform: translateX(0); }
+        
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-30px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes glow { from { box-shadow: 0 15px 40px rgba(255,215,0,0.6); } to { box-shadow: 0 20px 50px rgba(255,215,0,0.9); } }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-10px); } 75% { transform: translateX(10px); } }
+        
+        .shake { animation: shake 0.5s ease-in-out; }
+        .hidden { display: none !important; }
+        
+        @media (max-width: 400px) {
+            .container { padding: 15px; }
+            .header h1 { font-size: 24px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>🎵 VKMusicX Premium</h1>
+            <div id="statusBadge" class="status-badge status-free">🆓 Free</div>
+        </div>
+        
+        <!-- Stats -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value" id="coins">0</div>
+                <div class="stat-label">💰 Coins</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="hitsLeft">10</div>
+                <div class="stat-label">🎶 Hits qoldi</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="level">1</div>
+                <div class="stat-label">📊 Level</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="plays">0</div>
+                <div class="stat-label">▶️ Plays</div>
+            </div>
+        </div>
+        
+        <!-- Progress Bar -->
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressFill"></div>
+        </div>
+        
+        <!-- Main Action Buttons -->
+        <div class="action-buttons">
+            <button id="play10Hits" class="btn btn-primary">
+                ▶️ 10 ta Hit (Bepul)
+            </button>
+            <button id="vipBtn" class="btn btn-vip">
+                ⭐ VIP Premium (Bepul test)
+            </button>
+            <button id="watchAd" class="btn btn-warning">
+                📺 Reklama +100 coins
+            </button>
+            <button id="dailyBonus" class="btn btn-success">
+                🎁 Kunlik bonus
+            </button>
+        </div>
+        
+        <!-- Playlist -->
+        <div class="playlist">
+            <h3>🔥 Top 10 Hits</h3>
+            <div id="playlistTracks"></div>
+        </div>
+        
+        <!-- Referral -->
+        <div class="stat-card" style="margin-top: 20px;">
+            <h4>👥 Referral</h4>
+            <p>Do'stingizni chaqiring: <code id="refLink">-</code></p>
+            <button class="btn btn-primary" onclick="shareReferral()" style="width: 100%; margin-top: 10px;">
+                📤 Ulashish
+            </button>
+        </div>
+    </div>
+    
+    <!-- Notification -->
+    <div id="notification" class="notification"></div>
+
+    <script>
+        // === TELEGRAM INIT ===
+        Telegram.WebApp.ready();
+        Telegram.WebApp.expand();
+        Telegram.WebApp.MainButton.setText('💾 Saqlash').onClick(saveData).show();
+        
+        let userData = {
+            coins: 0,
+            hits_left: 10,
+            premium: false,
+            vip: false,
+            level: 1,
+            plays: 0,
+            last_ad: 0
+        };
+        let audioContext = null;
+        
+        // === DOM Elements ===
+        const els = {
+            coins: document.getElementById('coins'),
+            hitsLeft: document.getElementById('hitsLeft'),
+            level: document.getElementById('level'),
+            plays: document.getElementById('plays'),
+            statusBadge: document.getElementById('statusBadge'),
+            play10Hits: document.getElementById('play10Hits'),
+            vipBtn: document.getElementById('vipBtn'),
+            watchAd: document.getElementById('watchAd'),
+            dailyBonus: document.getElementById('dailyBonus'),
+            progressFill: document.getElementById('progressFill'),
+            playlistTracks: document.getElementById('playlistTracks'),
+            refLink: document.getElementById('refLink'),
+            notification: document.getElementById('notification')
+        };
+        
+        // === SONGS DATABASE ===
+        const songs = [
+            { title: 'Shape of You - Ed Sheeran', artist: 'Ed Sheeran', duration: '3:55', color: '#ff6b6b' },
+            { title: 'Blinding Lights', artist: 'The Weeknd', duration: '3:20', color: '#4ecdc4' },
+            { title: 'Levitating', artist: 'Dua Lipa', duration: '3:23', color: '#ffe66d' },
+            { title: 'Bad Habits', artist: 'Ed Sheeran', duration: '3:51', color: '#a8e6cf' },
+            { title: 'Save Your Tears', artist: 'The Weeknd', duration: '3:11', color: '#ffd93d' },
+            { title: 'Watermelon Sugar', artist: 'Harry Styles', duration: '2:54', color: '#ff8b94' },
+            { title: 'Dont Start Now', artist: 'Dua Lipa', duration: '3:03', color: '#95e1d3' },
+            { title: 'ROXANNE', artist: 'Arizona Zervas', duration: '2:23', color: '#ff9ff3' },
+            { title: 'Circles', artist: 'Post Malone', duration: '3:35', color: '#54a0ff' },
+            { title: 'Dance Monkey', artist: 'Tones and I', duration: '3:29', color: '#5f27cd' }
+        ];
+        
+        // === INIT ===
+        async function init() {
+            try {
+                const initData = Telegram.WebApp.initDataUnsafe;
+                userData.user_id = initData.user?.id || 'unknown';
+                userData.username = initData.user?.username || '';
+                
+                // Load fake user data
+                await loadUserData();
+                updateUI();
+                renderPlaylist();
+                updateRefLink();
+                
+                // Sound effect
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            } catch (error) {
+                showNotification('Xatolik yuz berdi!', 'error');
+            }
+        }
+        
+        // === UI UPDATE ===
+        function updateUI() {
+            els.coins.textContent = userData.coins;
+            els.hitsLeft.textContent = userData.hits_left;
+            els.level.textContent = userData.level;
+            els.plays.textContent = userData.plays;
+            
+            // Status
+            if (userData.vip) {
+                els.statusBadge.textContent = '⭐ VIP Premium';
+                els.statusBadge.className = 'status-badge status-vip';
+            } else if (userData.premium) {
+                els.statusBadge.textContent = '💎 Premium';
+                els.statusBadge.className = 'status-badge status-premium';
+            } else {
+                els.statusBadge.textContent = '🆓 Free';
+                els.statusBadge.className = 'status-badge status-free';
+            }
+            
+            // Progress
+            const progress = (userData.plays / 100) * 100;
+            els.progressFill.style.width = Math.min(100, progress) + '%';
+            
+            // Button states
+            els.play10Hits.disabled = userData.hits_left <= 0;
+            els.watchAd.disabled = Date.now() - userData.last_ad < 300000; // 5 min cooldown
+        }
+        
+        // === PLAY 10 HITS ===
+        els.play10Hits.onclick = async () => {
+            if (userData.hits_left <= 0) {
+                showNotification('Barcha hitlar tugadi! Reklama ko\'ring yoki VIP oling.', 'error');
+                return;
+            }
+            
+            els.play10Hits.classList.add('shake');
+            setTimeout(() => els.play10Hits.classList.remove('shake'), 500);
+            
+            userData.hits_left--;
+            userData.plays += 10;
+            userData.level = Math.floor(userData.plays / 50) + 1;
+            
+            // Play sound effect
+            playSound(440, 0.1);
+            
+            showNotification('🎶 10 ta hit ijro etildi! +50 coins', 'success');
+            
+            // Animate playlist
+            document.querySelectorAll('.track').forEach(track => {
+                track.style.animation = 'none';
+                setTimeout(() => track.style.animation = 'slideDown 0.5s ease-out', 10);
+            });
+            
+            updateUI();
+            await saveData();
+        };
+        
+        // === VIP BUTTON ===
+        els.vipBtn.onclick = async () => {
+            userData.vip = true;
+            userData.premium = true;
+            userData.coins += 1000;
+            userData.hits_left = 999;
+            
+            showNotification('⭐ VIP Premium faollashtirildi! Cheksiz hits!', 'success');
+            Telegram.WebApp.HapticFeedback.notificationOccurred('success');
+            
+            updateUI();
+            await saveData();
+        };
+        
+        // === WATCH AD ===
+        els.watchAd.onclick = async () => {
+            els.watchAd.disabled = true;
+            showNotification('📺 Reklama yuklanmoqda...');
+            
+            setTimeout(async () => {
+                userData.coins += 100;
+                userData.last_ad = Date.now();
+                userData.hits_left = Math.min(10, userData.hits_left + 2);
+                
+                showNotification('✅ Reklama ko\'rildi! +100 coins +2 hits', 'success');
+                Telegram.WebApp.HapticFeedback.notificationOccurred('success');
+                
+                els.watchAd.disabled = false;
+                updateUI();
+                await saveData();
+            }, 3000);
+        };
+        
+        // === DAILY BONUS ===
+        els.dailyBonus.onclick = async () => {
+            const reward = userData.vip ? 500 : userData.premium ? 250 : 100;
+            userData.coins += reward;
+            
+            showNotification(`🎁 Kunlik bonus: +${reward} coins!`, 'success');
+            Telegram.WebApp.HapticFeedback.notificationOccurred('success');
+            
+            updateUI();
+            await saveData();
+        };
+        
+        // === PLAYLIST RENDER ===
+        function renderPlaylist() {
+            els.playlistTracks.innerHTML = songs.map((song, index) => `
+                <div class="track" style="border-left: 4px solid ${song.color}" onclick="playTrack(${index})">
+                    <div class="track-icon">🎵</div>
+                    <div class="track-info">
+                        <h4>${song.title}</h4>
+                        <p>${song.artist} • ${song.duration}</p>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        // === TRACK PLAYER ===
+        function playTrack(index) {
+            if (userData.hits_left <= 0 && !userData.vip) {
+                showNotification('Hits tugadi! VIP oling yoki reklama ko\'ring.', 'error');
+                return;
+            }
+            
+            const song = songs[index];
+            showNotification(`▶️ ${song.title} ijro etilmoqda...`, 'info');
+            
+            // Visual feedback
+            event.currentTarget.style.background = 'rgba(0,255,0,0.3)';
+            setTimeout(() => {
+                event.currentTarget.style.background = '';
+            }, 1000);
+            
+            // Sound effect
+            playSound(523.25, 0.3); // C5 note
+            
+            if (!userData.vip) {
+                userData.hits_left--;
+                userData.plays++;
+            }
+            
+            updateUI();
+            saveData();
+        }
+        
+        // === REFERRAL ===
+        function updateRefLink() {
+            const refLink = `https://t.me/${Telegram.WebApp.initDataUnsafe.bot_username}?start=ref_${userData.user_id}`;
+            els.refLink.textContent = refLink.slice(0, 30) + '...';
+        }
+        
+        async function shareReferral() {
+            try {
+                await Telegram.WebApp.openTelegramLink(els.refLink.textContent);
+                showNotification('✅ Referral link ulashildi!', 'success');
+            } catch (e) {
+                showNotification('Ulashishda xatolik!', 'error');
+            }
+        }
+        
+        // === SAVE DATA ===
+        async function saveData() {
+            try {
+                await fetch('/api/webhook', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        user_id: userData.user_id,
+                        coins: 50, // reward
+                        ...userData
+                    })
+                });
+            } catch (e) {
+                console.log('Save error:', e);
+            }
+        }
+        
+        // === NOTIFICATION ===
+        function showNotification(message, type = 'info') {
+            const notif = els.notification;
+            notif.textContent = message;
+            notif.className = `notification show ${type}`;
+            
+            setTimeout(() => {
+                notif.className = 'notification';
+            }, 3000);
+        }
+        
+        // === SOUND EFFECTS ===
+        function playSound(frequency, duration) {
+            if (!audioContext) return;
+            
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.value = frequency;
+            oscillator.type = 'sine';
+            
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + duration);
+        }
+        
+        // === LOAD USER DATA (fake) ===
+        async function loadUserData() {
+            // Simulate API call
+            return new Promise(resolve => {
+                setTimeout(() => {
+                    // Random starting data
+                    userData.coins = Math.floor(Math.random() * 500);
+                    userData.plays = Math.floor(Math.random() * 200);
+                    userData.level = Math.floor(userData.plays / 50) + 1;
+                    resolve();
+                }, 500);
+            });
+        }
+        
+        // === START ===
+        init();
+        
+        // Back button
+        Telegram.WebApp.BackButton.onClick(() => {
+            Telegram.WebApp.close();
+        });
+    </script>
+</body>
+</html>
